@@ -1,316 +1,105 @@
 import random
-import matplotlib.pyplot as plt
-import networkx as nx
-import time
-import gym3
-from stable_baselines3 import PPO
-from procgen import ProcgenGym3Env
-import torch
+from blue_ray import NeuronGameEnv
 
-X,x,Y,y,z = 0,0,0,0,0
+timer = 60
 
-# Define a custom environment for the game
-class NeuronGameEnv:
-    def __init__(self,X,Y,x,y):
-        print("Initializing Neuron Game Environment...")
-        self.neuron = self.Neuron(X, Y)  # Initialize Neuron with default x and y
-        self.player = self.Player(x, y)  # Initialize Player with default x and y
-        self.game = self.Game()
-        self.id = "noa/blueray-v0",
-        self.entry_point = [0, 0, 0, 0],
-        self.reward_threshold = 200,
-        self.max_episode_steps = 100,
-        self.disable_env_checker = True
+def input_system(action,game):
+    global timer
+    # Player input and action logic
+    if action == 0:
+        game.player.connect_to_neuron(sorted_neurons[0])
+    elif action == 1:
+        game.player.connect_to_neuron(sorted_neurons[1])
+    elif action == 2:
+        game.player.connect_to_neuron(sorted_neurons[2])
+    elif action == 3:
+        game.player.connect_to_neuron(sorted_neurons[3])
 
-    class Neuron:
-        def __init__(self, _x, _y):
-            self.x = _x
-            self.y = _y
-            self.connections = []
-            self.activated = False
-            self.time_to_die = 30
-            print(f"Created Neuron at ({_x}, {_y})")
+    game.player.update(state_log["player"])
+    #game.render(neurons)
 
-        def activate(self):
-            self.activated = True
-            self.time_to_die += 10
-            print(f"Neuron at ({self.x}, {self.y}) activated. Time to die increased to {self.time_to_die}.")
+    if state_log['player']['activated']:
+        timer += 0.1
+    else:
+        timer -= 0.1
 
-        def connect(self, _neuron):
-            self.connections.append(_neuron)
-            print(f"Neuron at ({self.x}, {self.y}) connected to Neuron at ({_neuron.x}, {_neuron.y}).")
+    if timer <= 0:
+        print("game over")
+        game.set_game_state(True)
+    elif timer >= 60:
+        print("you won!")
+        game.set_game_state(True)
 
-        def is_alive(self):
-            return self.time_to_die > 0
+def ai_agent(state):
+    # Logic for selecting an action; replace with a model if needed
+    # For example, if actions are discrete integers:
+    return env.action_space.sample()  # Random action for demonstration
 
-    class Player:
-        def __init__(self, x, y):
-            self.x = x
-            self.y = y
-            self.connections = []
-            self.activated = False
-            print(f"Player initialized at ({x}, {y})")
-
-        def activate(self):
-            for neuron in self.connections:
-                if neuron.activated:
-                    self.activated = True
-            print(f"Player activation status: {self.activated}")
-
-        def connect_to_neuron(self, neuron):
-            self.connections.append(neuron)
-            if neuron.activated:
-                self.activated = True
-            print(f"Player connected to Neuron at ({neuron.x}, {neuron.y}). Player activated: {self.activated}")
-
-    class Game:
-        def __init__(self):
-            self.neurons = []
-            self.player = None
-            self.is_game_over = False
-            self.set_player = [random.randint(0, 100), random.randint(0, 100)]
-            print("Game initialized.")
-
-        def add_neuron(self, x, y):
-            neuron = Neuron(x, y)
-            self.neurons.append(neuron)
-            print(f"Neuron added at ({x}, {y}). Total neurons: {len(self.neurons)}")
-            return neuron
-
-        def set_player(self, x, y):
-            self.player = self.player(x, y)
-            print(f"Player set at ({x}, {y}).")
-
-        def activate_neuron(self):
-            random_neuron = random.choice(self.neurons)
-            random_neuron.activate()
-            for neuron in random_neuron.connections:
-                neuron.activate()
-
-        def connect_neurons(self, neuron1, neuron2):
-            neuron1.connect(neuron2)
-            neuron2.connect(neuron1)
-
-        def start_game_timer(self):
-            global timer
-            while timer > 0:
-                timer -= 1
-                print(f"Timer: {timer}")
-                if timer == 0:
-                    self.is_game_over = True
-                    print("Game over! Timer reached zero.")
-                    break
-
-        def game_state(self):
-            state =  {
-                "player": {
-                    "x": self.player.x,
-                    "y": self.player.y,
-                    "activated": self.player.activated,
-                },
-                "neurons": [{
-                    "x": neuron.x,
-                    "y": neuron.y,
-                    "activated": neuron.activated,
-                    "time_to_die": neuron.time_to_die
-                } for neuron in self.neurons],
-                "timer": timer,
-                "is_game_over": self.is_game_over,
-            }
-            print(f"Game State: {state}")
-            return state
-
-
-        def reset(self):
-            self.is_game_over = False
-            for neuron in self.neurons:
-                neuron.activated = False
-                neuron.time_to_die = 30
-                neuron.connections = []
-            self.player.activate()
-            print("Game reset.")
-
-    class Act:
-        # connect to other neurons
-        def __init__(self,x,y,z):
-            self.x = x
-            self.y = y
-            self.z = z
-
-        def change_input(self,x,y):
-            self.x = x
-            self.y = y
-
-    class ac_space:
-        def __init__(self,x,y,z):
-            self.x = x
-            self.y = y
-            self.z = z
-
-        def change_input(self,x,y):
-            self.x = x
-            self.y = y
-
-    class observe:
-        #call state from game object
-        def __init__(self,game):
-            return game.game_state()
-
-    class num:
-        def __init__(self, game):
-            self.game = game
-
-        def get_game_state(self):
-            return self.game.game_state()
-
-env = NeuronGameEnv(X,Y,x,y)
+env = [0, 0, 50, 50]
+timer = 60
+env = NeuronGameEnv()  # Initialize environment with default parameters
 game = env.Game()
-neuron = env.Neuron(X,Y)
-player = env.Player(x,y)
-model = PPO("blueray", env, verbose=1)
-model.learn(total_timesteps=10000)
+pos = {"x": 50, "y": 50}
+
+# Generate 6 neurons with the specified properties
+neurons = [
+    {
+        "x": random.randint(0, 100),
+        "y": random.randint(0, 100),
+        "activated": random.choice([True, False]),  # 50% chance of being True
+        "time_to_die": 30
+    }
+    for _ in range(6)
+]
+
+_neurons = env.add_neurons(neurons=neurons, game=game)  # Add neurons to the environment
+print("Generated Neurons:", neurons)
+
+game_running = True
+while game_running:
+    picture = env.reset(game)
+    state_log = picture.get_state()
+    game_running = not state_log['is_game_over']
+    print("Game state after reset:", state_log)
+
+    # Random connection update for neurons
+    for neuron in neurons:
+        random_neuron = random.choice([n for n in neurons if n != neuron])  # Choose a different random neuron
+        if "connections" not in neuron:
+            neuron["connections"] = []  # Initialize connections if not already present
+        if random_neuron not in neuron["connections"]:  # Avoid duplicate connections
+            neuron["connections"].append(random_neuron)
+
+    # Render the updated neurons and game state
+    env.update_neurons(neurons=neurons, game=game)  # Assuming a method `update_neurons` exists
+    game.render(neurons)
+
+    # Assume the player's current position is given by state_log["player"]["x"] and state_log["player"]["y"]
+    player_x = state_log["player"]["x"]
+    player_y = state_log["player"]["y"]
+
+    pos = [player_x,player_y]
+
+    # Calculate distance and sort neurons
+    sorted_neurons = sorted(
+        neurons,
+        key=lambda neuron: ((neuron["x"] - player_x) ** 2 + (neuron["y"] - player_y) ** 2) ** 0.5
+    )
+    action = ai_agent(state_log)
+    input_system(action,game)
+
+    # Perform the action
+    next_state, reward, done, info = env.game.set_action(action)
+
+    # Print details
+    print(f"Action Taken: {action}")
+    print(f"New State: {next_state}, Reward: {reward}, Done: {done}")
+
+    if __name__ == "__main__":
+        try:
+            print("ok")
+
+        except:
+            print("succsess!")
 
 
-# Use the model to make decisions
-observation = env.reset()
-action, _ = model.predict(observation)
-
-print("Initializing PPO...")
-step = 0
-# Register the environment
-new_spec = {
-    id: "noa/blueray-v0"
-}
-
-#gym3.env.register(new_spec)
-
-tt = torch.tensor([0,0,0])  # This should be a tensor with proper shape and type
-while True:
-    action = env.ac_space(0,0,0)
-    env.Act.change_input(self=env, x=action.x, y=action.y)
-
-    env.Act.change_input(gym3.types_np.sample(env.ac_space(0,0,0),bshape=(tt,)))
-    env.num.get_game_state(game)
-    rew, obs, first = env.observe(game)
-    print(f"step {step} reward {rew} first {first}")
-    step += 1
-#env.register(entry_point=[0,0,0,0])
-env = gym3.make("noa/blueray-v0",reward_threshold = 200.0,
-                nondeterministic = False,
-                max_episode_steps = 1000,
-                order_enforce = True,
-                autoreset = False,
-                disable_env_checker = False,
-                apply_api_compatibility = False,
-                kwargs = env)
-
-observation, info = env.reset(seed=42)
-
-for _ in range(1000):
-    X, Y, x, y = 0,0,0,0
-    # this is where you would insert your policy
-    action = env.action_space.sample(X, Y, x, y)
-
-    # step (transition) through the environment with the action
-    # receiving the next observation, reward and if the episode has terminated or truncated
-    observation, reward, terminated, truncated, info = env.step(action)
-
-    # If the episode has ended then we can reset to start a new episode
-    if terminated or truncated:
-        observation, info = env.reset()
-
-    # Implement game state representation, actions, and rewards
-
-env.close()
-
-
-
-def plot_neuron_graph(game):
-    # Create a graph
-    G = nx.Graph()
-
-    # Add neurons as nodes to the graph
-    for neuron in game.neurons:
-        G.add_node((neuron.x, neuron.y), activated=neuron.activated)
-
-    # Add connections as edges
-    for neuron in game.neurons:
-        for connected_neuron in neuron.connections:
-            G.add_edge((neuron.x, neuron.y), (connected_neuron.x, connected_neuron.y))
-
-    # Set up the plot
-    plt.figure(figsize=(8, 8))
-
-    # Draw the graph with node positions
-    pos = {(neuron.x, neuron.y): (neuron.x, neuron.y) for neuron in game.neurons}
-    nx.draw(G, pos, with_labels=False, node_size=100, node_color='yellow' if neuron.activated else 'gray',
-            edge_color='gray')
-
-    # Plot the player
-    if game.player:
-        plt.scatter(game.player.x, game.player.y, color='purple', s=100, label='Player')
-
-    # Show the plot
-    plt.title('Neuron Network with Player')
-    plt.xlabel('X Position')
-    plt.ylabel('Y Position')
-    plt.legend()
-    plt.show()
-
-
-# Initialize PPO
-print("Initializing PPO...")
-gym = PPO("noa/blueray-v0", env, verbose=1)
-
-game = env.Game()
-neuron = env.Neuron(X, Y)
-player = env.Player(x, y)
-model = PPO("blueray", env, verbose=1)
-model.learn(total_timesteps=10000)
-
-# Use the model to make decisions
-print("Starting model predictions...")
-observation = env.game_state()
-action, _ = model.predict(observation)
-blue_ray_output[0], blue_ray_output[1] = action  # Update blue_ray_output with the predicted action
-print(f"Action taken: {action}")
-
-# Start the game
-timer = 30
-game.reset()
-
-for _ in range(10):
-    x, y = random.randint(0, 100), random.randint(0, 100)
-    game.add_neuron(x, y)
-
-while not game.is_game_over:
-    # Example usage
-    timer -= 10
-    game.set_player(random.randint(0,100), random.randint(0,100))
-
-
-    # Connect some neurons
-    for i in range(5):
-        neuron1 = game.neurons[i]
-        neuron2 = game.neurons[(i + 1) % len(game.neurons)]  # Circular connection
-        game.connect_neurons(neuron1, neuron2)
-
-    # Plot the graphx
-    game.activate_neuron()
-    plot_neuron_graph(game)
-    print(timer, "seconds!")
-
-# Calculate the start time
-start = time.time()
-
-# Code here
-
-# Calculate the end time and time taken
-end = time.time()
-length = end - start
-
-# Show the results : this can be altered however you like
-print("game over")
-game.is_game_over = False
-
-env.close()
